@@ -169,5 +169,77 @@
     "reasoning_steps": 1,
     "tool_calls": 0,
     "token_usage": 447
+  },
+  {
+    "time": "2026-03-14 12:36:46.364554",
+    "query": "Who is Prime Minister of India",
+    "success": true,
+    "hallucination": false,
+    "reasoning_steps": 2,
+    "tool_calls": 1,
+    "token_usage": 567
+  },
+  {
+    "time": "2026-03-14 12:37:02.031676",
+    "query": "239*323",
+    "success": true,
+    "hallucination": false,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 359
+  },
+  {
+    "time": "2026-03-14 12:56:30.778158",
+    "query": "Who is Amar Milind Kulkarni?",
+    "success": true,
+    "hallucination": false,
+    "reasoning_steps": 2,
+    "tool_calls": 0,
+    "token_usage": 872
+  },
+  {
+    "time": "2026-03-14 12:56:48.145561",
+    "query": "Who is Darshan Rajendra Nikrad",
+    "success": true,
+    "hallucination": false,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 536
+  },
+  {
+    "time": "2026-03-14 12:57:21.307154",
+    "query": "Who am i?",
+    "success": true,
+    "hallucination": false,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 591
+  },
+  {
+    "time": "2026-03-14 12:59:41.819069",
+    "query": "O(n^2) or O(n!) which is more scalable on large problems",
+    "success": true,
+    "hallucination": false,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 698
+  },
+  {
+    "time": "2026-03-25 23:01:19.984572",
+    "query": "hey",
+    "success": true,
+    "hallucination": false,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 250
+  },
+  {
+    "time": "2026-03-25 23:01:34.343972",
+    "query": "Who is Amar",
+    "success": true,
+    "hallucination": false,
+    "reasoning_steps": 6,
+    "tool_calls": 0,
+    "token_usage": 2114
   }
 ]
