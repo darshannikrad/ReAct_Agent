@@ -11,5 +11,6 @@
   "Who am i?": "Unknown",
   "O(n^2) or O(n!) which is more scalable on large problems": "O(n^2)",
   "hey": "hello",
-  "Who is Amar": "Amar is a given name and surname of Indian origin."
+  "Who is Amar": "Amar is a given name and surname of Indian origin.",
+  "Calculate 239 * 323": "77117"
 }

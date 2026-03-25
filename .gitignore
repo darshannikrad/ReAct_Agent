@@ -1,0 +1,8 @@
+.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+memory/learned_knowledge.json
+evaluation/run_metrics.json
