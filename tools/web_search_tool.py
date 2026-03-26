@@ -1,49 +1,44 @@
 from datetime import datetime
-
+ 
 try:
     from duckduckgo_search import DDGS
     DDGS_AVAILABLE = True
 except ImportError:
     DDGS_AVAILABLE = False
-
+ 
 import requests
 import re
-
-
+ 
+ 
 class WebSearchTool:
     name = "web"
-
+ 
     HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                       "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     }
-
+ 
     def run(self, query: str) -> str:
         year = datetime.now().year
-        # Always force current year in query so stale results are avoided
         if str(year) not in query:
             query = f"{query} {year}"
-
-        # ── Method 1: duckduckgo_search library (most reliable) ──────────
+ 
         if DDGS_AVAILABLE:
             result = self._ddgs_lib(query)
             if result and len(result) > 30:
                 return result
-
-        # ── Method 2: DuckDuckGo HTML scrape ────────────────────────────
+ 
         result = self._ddg_html(query)
         if result and len(result) > 30:
             return result
-
-        # ── Method 3: DDG Instant Answer API ────────────────────────────
+ 
         result = self._ddg_api(query)
         if result and len(result) > 30:
             return result
-
+ 
         return "No current information found. Do NOT answer from training data for time-sensitive questions."
-
+ 
     def _ddgs_lib(self, query: str) -> str:
-        """Use the duckduckgo_search library — most reliable method."""
         try:
             with DDGS() as ddgs:
                 results = list(ddgs.text(query, max_results=4))
@@ -51,7 +46,7 @@ class WebSearchTool:
             return " | ".join(snippets[:3]) if snippets else ""
         except Exception:
             return ""
-
+ 
     def _ddg_html(self, query: str) -> str:
         try:
             r = requests.get(
@@ -73,7 +68,7 @@ class WebSearchTool:
             return " | ".join(cleaned[:3]) if cleaned else ""
         except Exception:
             return ""
-
+ 
     def _ddg_api(self, query: str) -> str:
         try:
             r = requests.get(
