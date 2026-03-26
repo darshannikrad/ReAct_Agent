@@ -1,16 +1,8 @@
 {
-  "My name is Darshan": "Hello Darshan",
-  "what is My name?": "Darshan",
-  "Who is Current Supreme leader of Iran?": "Ali Khamenei",
-  "Amar is my Darling": "Hello Darshan",
-  "Who is Amar?": "Darshan's Darling",
-  "Who is Prime Minister of India": "Narendra Modi",
-  "239*323": "77117",
-  "Who is Amar Milind Kulkarni?": "No information available",
-  "Who is Darshan Rajendra Nikrad": "No information available",
-  "Who am i?": "Unknown",
-  "O(n^2) or O(n!) which is more scalable on large problems": "O(n^2)",
-  "hey": "hello",
-  "Who is Amar": "Amar is a given name and surname of Indian origin.",
-  "Calculate 239 * 323": "77117"
+  "whtas ur name": "I'm an AI assistant, and I don't have a personal name. I'm here to help answer your questions and provide information on a wide range of topics.",
+  "ooo nice": "Is there something I can help you with or would you like to start a conversation?",
+  "what u do basically": "I'm a highly accurate ReAct research agent, designed to provide information and answer questions on a wide range of topics. I can help with tasks such as explaining concepts, defining terms, performing calculations, and more. I strive to provide accurate and up-to-date information, and I'm here to assist you with any questions or topics you'd like to discuss.",
+  "so u will help me in all my react projects": "Yes, I can help with your React projects by providing explanations, examples, and guidance on various topics such as component design, state management, routing, and more. I can also help with troubleshooting and debugging issues, as well as offering suggestions for best practices and optimization. Feel free to ask me any questions you have, and I'll do my best to assist you.",
+  "tell me about operator overloading": "Operator overloading is a programming technique that enables developers to redefine the behavior of operators, such as +, -, \\*, /, and others, when working with custom data types. This allows for more natural and expressive code, making it easier to work with complex data structures and algorithms. For example, in a class representing a vector, you could overload the + operator to perform vector addition, or overload the \\* operator to perform scalar multiplication. Operator overloading is commonly used in object-oriented programming languages, such as C++, Java, and Python, and can greatly improve the readability and maintainability of code. It's a powerful tool for creating more intuitive and user-friendly APIs, and can help to reduce the complexity of code by providing a more natural way of expressing operations on custom data types.",
+  "tell me about war": "War is a state of armed conflict between states, societies, or other large groups, characterized by the use of violence, aggression, and coercion to achieve political, economic, or social objectives. Throughout history, wars have been fought for various reasons, including territorial expansion, resource control, ideological differences, and self-defense. The impact of war can be devastating, resulting in loss of life, displacement of people, destruction of infrastructure, and long-term social and economic consequences. Wars have also driven technological innovation, social change, and the development of international relations and diplomacy. Some of the most significant wars in history include World War I and II, the Cold War, and more recent conflicts in the Middle East and other regions. The study of war and its consequences is a complex and multidisciplinary field, involving history, politics, sociology, economics, and other disciplines."
 }

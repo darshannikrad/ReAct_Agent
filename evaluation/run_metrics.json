@@ -1,254 +1,137 @@
 [
   {
-    "time": "2026-03-02 23:34:34.733346",
-    "query": "hi",
+    "time": "2026-03-27 00:58:39.260628",
+    "query": "Who is president of America Today?",
+    "success": true,
+    "hallucination": true,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 1675
+  },
+  {
+    "time": "2026-03-27 00:58:59.976032",
+    "query": "then verify this with the web results",
+    "success": true,
+    "hallucination": true,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 1679
+  },
+  {
+    "time": "2026-03-27 00:59:29.752230",
+    "query": "use duckduckgo-search",
+    "success": true,
+    "hallucination": true,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 1762
+  },
+  {
+    "time": "2026-03-27 00:59:46.121247",
+    "query": "It is Donald Trump",
+    "success": true,
+    "hallucination": true,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 1762
+  },
+  {
+    "time": "2026-03-27 00:59:52.526563",
+    "query": "yess",
+    "success": true,
+    "hallucination": true,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 1722
+  },
+  {
+    "time": "2026-03-27 01:00:00.141769",
+    "query": "yess",
+    "success": true,
+    "hallucination": true,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 1710
+  },
+  {
+    "time": "2026-03-27 01:00:05.821221",
+    "query": "yess",
+    "success": true,
+    "hallucination": true,
+    "reasoning_steps": 1,
+    "tool_calls": 0,
+    "token_usage": 1707
+  },
+  {
+    "time": "2026-03-27 01:00:25.267788",
+    "query": "whtas ur name",
     "success": true,
     "hallucination": false,
     "reasoning_steps": 1,
     "tool_calls": 0,
-    "token_usage": 250
+    "token_usage": 1732
   },
   {
-    "time": "2026-03-02 23:34:52.746525",
-    "query": "President of India now?",
+    "time": "2026-03-27 01:00:34.384150",
+    "query": "ooo nice",
     "success": true,
     "hallucination": false,
     "reasoning_steps": 1,
     "tool_calls": 0,
-    "token_usage": 292
+    "token_usage": 1707
   },
   {
-    "time": "2026-03-02 23:35:09.046585",
-    "query": "Iran Supreme Leader currently is?",
+    "time": "2026-03-27 01:00:41.627832",
+    "query": "what u do basically",
     "success": true,
     "hallucination": false,
     "reasoning_steps": 1,
     "tool_calls": 0,
-    "token_usage": 335
+    "token_usage": 1761
   },
   {
-    "time": "2026-03-02 23:35:22.512592",
-    "query": "America President is?",
+    "time": "2026-03-27 01:01:15.026526",
+    "query": "so u will help me in all my react projects",
     "success": true,
     "hallucination": false,
     "reasoning_steps": 1,
     "tool_calls": 0,
-    "token_usage": 372
+    "token_usage": 1845
   },
   {
-    "time": "2026-03-02 23:35:31.754884",
-    "query": "in 2026?",
+    "time": "2026-03-27 01:03:46.099909",
+    "query": "tell me about operator overloading",
     "success": true,
     "hallucination": false,
     "reasoning_steps": 1,
     "tool_calls": 0,
-    "token_usage": 416
+    "token_usage": 2013
   },
   {
-    "time": "2026-03-02 23:35:50.502926",
-    "query": "metrices",
+    "time": "2026-03-27 01:03:59.920164",
+    "query": "tell me about war",
     "success": true,
     "hallucination": false,
     "reasoning_steps": 1,
     "tool_calls": 0,
-    "token_usage": 449
+    "token_usage": 2224
   },
   {
-    "time": "2026-03-02 23:36:35.320384",
-    "query": "21431*243",
+    "time": "2026-03-27 01:04:14.062851",
+    "query": "tell me about current situation of war in between iran and us",
     "success": true,
-    "hallucination": false,
+    "hallucination": true,
     "reasoning_steps": 1,
     "tool_calls": 0,
-    "token_usage": 486
+    "token_usage": 2149
   },
   {
-    "time": "2026-03-02 23:40:21.364523",
-    "query": "69*69",
+    "time": "2026-03-27 01:04:40.468958",
+    "query": "is it effect india",
     "success": true,
-    "hallucination": false,
+    "hallucination": true,
     "reasoning_steps": 1,
     "tool_calls": 0,
-    "token_usage": 251
-  },
-  {
-    "time": "2026-03-02 23:45:25.787492",
-    "query": "0*0",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 256
-  },
-  {
-    "time": "2026-03-02 23:45:50.887539",
-    "query": "What is My Name",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 2,
-    "tool_calls": 0,
-    "token_usage": 646
-  },
-  {
-    "time": "2026-03-02 23:46:07.872807",
-    "query": "My name is Darshan, Remember it.",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 398
-  },
-  {
-    "time": "2026-03-03 00:03:54.970109",
-    "query": "how many countries are there in world?",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 453
-  },
-  {
-    "time": "2026-03-03 00:06:56.179203",
-    "query": "A report provided by Deloitte to Australian government, was found to contain multiple fabricated citations and phantom footnotes. As a result, Deloitte will refund part of a ~$300,000 government contract.",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 2,
-    "tool_calls": 0,
-    "token_usage": 1153
-  },
-  {
-    "time": "2026-03-03 00:06:56.747394",
-    "query": "",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 650
-  },
-  {
-    "time": "2026-03-03 00:21:45.916428",
-    "query": "My name is Darshan",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 254
-  },
-  {
-    "time": "2026-03-03 00:23:06.617012",
-    "query": "what is My name?",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 289
-  },
-  {
-    "time": "2026-03-03 00:23:32.331624",
-    "query": "Who is Current Supreme leader of Iran?",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 2,
-    "tool_calls": 0,
-    "token_usage": 696
-  },
-  {
-    "time": "2026-03-03 00:23:50.205530",
-    "query": "Amar is my Darling",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 407
-  },
-  {
-    "time": "2026-03-03 00:24:05.792220",
-    "query": "Who is Amar?",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 447
-  },
-  {
-    "time": "2026-03-14 12:36:46.364554",
-    "query": "Who is Prime Minister of India",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 2,
-    "tool_calls": 1,
-    "token_usage": 567
-  },
-  {
-    "time": "2026-03-14 12:37:02.031676",
-    "query": "239*323",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 359
-  },
-  {
-    "time": "2026-03-14 12:56:30.778158",
-    "query": "Who is Amar Milind Kulkarni?",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 2,
-    "tool_calls": 0,
-    "token_usage": 872
-  },
-  {
-    "time": "2026-03-14 12:56:48.145561",
-    "query": "Who is Darshan Rajendra Nikrad",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 536
-  },
-  {
-    "time": "2026-03-14 12:57:21.307154",
-    "query": "Who am i?",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 591
-  },
-  {
-    "time": "2026-03-14 12:59:41.819069",
-    "query": "O(n^2) or O(n!) which is more scalable on large problems",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 698
-  },
-  {
-    "time": "2026-03-25 23:01:19.984572",
-    "query": "hey",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 250
-  },
-  {
-    "time": "2026-03-25 23:01:34.343972",
-    "query": "Who is Amar",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 6,
-    "tool_calls": 0,
-    "token_usage": 2114
-  },
-  {
-    "time": "2026-03-26 00:46:13.195237",
-    "query": "Calculate 239 * 323",
-    "success": true,
-    "hallucination": false,
-    "reasoning_steps": 1,
-    "tool_calls": 0,
-    "token_usage": 257
+    "token_usage": 2199
   }
 ]

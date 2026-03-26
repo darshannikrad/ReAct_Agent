@@ -1,13 +1,17 @@
-class ToolSelector:
+def select(self, query, tools):
+    q = query.lower()
 
-    def select(self, query, tools):
+    factual_keywords = [
+        "who", "what", "when", "where",
+        "latest", "current", "today",
+        "news", "winner", "president",
+        "prime minister", "price", "score"
+    ]
 
-        q = query.lower()
+    if any(k in q for k in factual_keywords):
+        return "web"
 
-        if any(x in q for x in ["calculate", "*", "+", "-", "/"]):
-            return "python"
+    if any(k in q for k in ["calculate", "+", "-", "*", "/"]):
+        return "python"
 
-        if any(x in q for x in ["who", "director", "president", "ceo", "latest"]):
-            return "web"
-
-        return None
+    return None

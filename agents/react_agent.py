@@ -1,6 +1,10 @@
+from json import tool
 import re
+from unittest import result
+from agents import tool_selector
 from llm.llm_provider import generate
 from config.settings import MAX_STEPS
+import tools
 
 class ReActLoop:
 
@@ -21,7 +25,12 @@ class ReActLoop:
         for step in range(MAX_STEPS):
 
             prompt = self.memory.context()
-            output = generate(prompt)
+            # output = generate(prompt)
+            tool = tool_selector.select(query, tools)
+
+            if tool:
+                output = tools[tool].run(query)
+                return output
 
             self.memory.add("Agent", output)
 
