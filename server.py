@@ -18,22 +18,17 @@ try:
     from agents.critic_agent import CriticAgent
     from memory.learning_memory import LearningMemory
     from memory.working_memory import WorkingMemory
-    from core.react_loop import ReActLoop
+    from core.react_loop import ReActLoop, _is_bad_answer
     from tools.web_search_tool import WebSearchTool
     from tools.python_tool import PythonTool
     from tools.wiki_tool import WikiTool
 
-    planner         = PlannerAgent()
-    critic          = CriticAgent()
-    learning_memory = LearningMemory()
-
-    # ── SHARED working memory — persists across queries for conversation context
+    planner               = PlannerAgent()
+    critic                = CriticAgent()
+    learning_memory       = LearningMemory()
     shared_working_memory = WorkingMemory()
-
-    tools = [WikiTool(), WebSearchTool(), PythonTool()]
-
-    # ── Single agent instance reusing the same working_memory
-    agent = ReActLoop(tools, shared_working_memory, learning_memory)
+    tools                 = [WikiTool(), WebSearchTool(), PythonTool()]
+    agent                 = ReActLoop(tools, shared_working_memory, learning_memory)
 
     AGENT_READY = True
     print("✅ Agent loaded successfully.")
@@ -65,8 +60,6 @@ def serve_ui():
     return {"message": "ReAct Agent API running."}
 
 
-# ── Schemas ───────────────────────────────────────────────────────
-
 class QueryRequest(BaseModel):
     query: str
 
@@ -74,14 +67,10 @@ class DeleteMemoryRequest(BaseModel):
     query: str
 
 
-# ── Health ────────────────────────────────────────────────────────
-
 @app.get("/health")
 def health():
     return {"status": "ok", "agent_ready": AGENT_READY}
 
-
-# ── Query ─────────────────────────────────────────────────────────
 
 @app.post("/query")
 def query_endpoint(req: QueryRequest):
@@ -92,9 +81,9 @@ def query_endpoint(req: QueryRequest):
     if not AGENT_READY:
         return _stub(query)
 
-    # ── Strict learned memory check ───────────────────────────────
+    # Only serve from memory if it's a good cached answer
     learned = learning_memory.retrieve(query)
-    if learned:
+    if learned and not _is_bad_answer(learned):
         _log(query, True, False, 1, 0, 0)
         return {
             "answer":  learned,
@@ -104,7 +93,6 @@ def query_endpoint(req: QueryRequest):
             "metrics": {"steps":1,"tool_calls":0,"tokens":0,"success":True,"hallucination":False},
         }
 
-    # ── Agent run ─────────────────────────────────────────────────
     agent.metrics.reset()
 
     try:
@@ -113,13 +101,17 @@ def query_endpoint(req: QueryRequest):
         plan_text = ""
 
     answer = agent.run(query)
+    valid  = critic.verify(query, answer)
+    m      = agent.metrics
 
-    valid = critic.verify(query, answer)
-    m = agent.metrics
-
-    if valid:
+    # ✅ NEVER cache bad/empty answers
+    if valid and not _is_bad_answer(answer):
         learning_memory.store(query, answer)
         m.mark_success()
+    elif _is_bad_answer(answer):
+        print(f"[Server] Not caching bad answer: {answer}")
+        valid = False
+        m.mark_hallucination()
     else:
         m.mark_hallucination()
 
@@ -131,16 +123,14 @@ def query_endpoint(req: QueryRequest):
         "source":  "agent",
         "valid":   valid,
         "metrics": {
-            "steps":        m.steps,
-            "tool_calls":   m.tool_calls,
-            "tokens":       m.tokens,
-            "success":      m.success,
+            "steps":         m.steps,
+            "tool_calls":    m.tool_calls,
+            "tokens":        m.tokens,
+            "success":       m.success,
             "hallucination": m.hallucination,
         },
     }
 
-
-# ── Metrics ───────────────────────────────────────────────────────
 
 @app.get("/metrics")
 def get_metrics():
@@ -165,8 +155,6 @@ def clear_metrics():
     return {"message": "Metrics cleared."}
 
 
-# ── Memory ────────────────────────────────────────────────────────
-
 @app.get("/memory")
 def get_memory():
     if not AGENT_READY:
@@ -186,8 +174,6 @@ def delete_memory_entry(req: DeleteMemoryRequest):
     return {"message": f"Deleted: {req.query}"}
 
 
-# ── History search ────────────────────────────────────────────────
-
 @app.get("/history/search")
 def search_history(q: str = ""):
     data = json.loads(METRICS_FILE.read_text())
@@ -197,17 +183,12 @@ def search_history(q: str = ""):
     return {"runs": filtered[-50:]}
 
 
-# ── Conversation reset ────────────────────────────────────────────
-
 @app.post("/reset-context")
 def reset_context():
-    """Clear the conversation context (not learned memory)."""
     if AGENT_READY:
         shared_working_memory.conv_log = []
     return {"message": "Conversation context cleared."}
 
-
-# ── Helpers ───────────────────────────────────────────────────────
 
 def _stub(query):
     return {
