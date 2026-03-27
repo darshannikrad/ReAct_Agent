@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 try:
     from agents.planner_agent import PlannerAgent
-    from agents.critic_agent import CriticAgent
+    from agents.critic_agent import CriticAgent, _is_search_failure
     from memory.learning_memory import LearningMemory
     from memory.working_memory import WorkingMemory
     from core.react_loop import ReActLoop, _is_bad_answer
@@ -81,7 +81,7 @@ def query_endpoint(req: QueryRequest):
     if not AGENT_READY:
         return _stub(query)
 
-    # Only serve from memory if it's a good cached answer
+    # ── Serve from memory only if it's a known-good answer ───────────────
     learned = learning_memory.retrieve(query)
     if learned and not _is_bad_answer(learned):
         _log(query, True, False, 1, 0, 0)
@@ -93,6 +93,7 @@ def query_endpoint(req: QueryRequest):
             "metrics": {"steps":1,"tool_calls":0,"tokens":0,"success":True,"hallucination":False},
         }
 
+    # ── Run agent ─────────────────────────────────────────────────────────
     agent.metrics.reset()
 
     try:
@@ -101,19 +102,44 @@ def query_endpoint(req: QueryRequest):
         plan_text = ""
 
     answer = agent.run(query)
-    valid  = critic.verify(query, answer)
     m      = agent.metrics
 
-    # ✅ NEVER cache bad/empty answers
+    # ── Retry once if critic rejects (gives agent a second chance) ────────
+    MAX_RETRIES = 1
+    for attempt in range(MAX_RETRIES):
+        valid = critic.verify(query, answer)
+        if valid:
+            break
+
+        # Don't retry if search simply failed — retrying won't help
+        if _is_bad_answer(answer) or _is_search_failure(answer):
+            print(f"[Server] Search failure — not retrying")
+            break
+
+        print(f"[Server] Critic rejected, retry {attempt + 1}/{MAX_RETRIES}")
+        agent.metrics.reset()
+        # Reset working memory step trace for fresh retry
+        shared_working_memory.reset_run()
+        answer = agent.run(query)
+        m = agent.metrics
+
+    # Final critic check after all retries
+    valid = critic.verify(query, answer)
+
+    # ── Decide success / hallucination — only mark ONE, never both ────────
+    # react_loop no longer calls mark_success() — only server does
     if valid and not _is_bad_answer(answer):
         learning_memory.store(query, answer)
-        m.mark_success()
-    elif _is_bad_answer(answer):
-        print(f"[Server] Not caching bad answer: {answer}")
-        valid = False
-        m.mark_hallucination()
+        m.success      = True   # set directly, not via mark_success()
+        m.hallucination = False
+    elif _is_bad_answer(answer) or _is_search_failure(answer):
+        # Search genuinely failed — not a hallucination, just no data available
+        m.success      = False
+        m.hallucination = False  # don't penalise for missing data
     else:
-        m.mark_hallucination()
+        # Critic rejected a confident answer — that IS a hallucination
+        m.success      = False
+        m.hallucination = True
 
     _log(query, m.success, m.hallucination, m.steps, m.tool_calls, m.tokens)
 
