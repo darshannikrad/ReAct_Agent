@@ -5,12 +5,24 @@ from config.settings import MAX_STEPS, get_system_prompt
 from evaluation.metrics import Metrics
 
 
-# Political roles that MUST be verified live — never answered from cache
 MUST_VERIFY_PATTERNS = [
     r"president", r"prime minister", r"pm of", r"chancellor",
     r"king", r"queen", r"ceo of", r"head of", r"leader of",
     r"who (is|was) (the )?", r"who runs", r"in charge of",
     r"current .*(minister|president|leader|head|chief)",
+    r"price of", r"cost of", r"worth", r"stock", r"gold",
+    r"won the", r"world cup", r"champion", r"winner",
+    r"latest", r"recent", r"today", r"now", r"current",
+]
+
+# Answers that should NEVER be cached — search failed
+BAD_ANSWER_PREFIXES = [
+    "i could not find",
+    "no current information",
+    "i was unable",
+    "i don't have",
+    "i cannot find",
+    "search returned nothing",
 ]
 
 
@@ -20,6 +32,11 @@ def _requires_live_search(query: str) -> bool:
         if re.search(p, q):
             return True
     return False
+
+
+def _is_bad_answer(answer: str) -> bool:
+    a = answer.lower().strip()
+    return any(a.startswith(p) for p in BAD_ANSWER_PREFIXES)
 
 
 class ReActLoop:
@@ -44,7 +61,6 @@ class ReActLoop:
     def extract_answer(self, text: str):
         if "Final Answer:" in text:
             ans = text.split("Final Answer:")[-1].strip()
-            # Take everything after "Final Answer:" — supports multi-sentence answers
             return ans.strip()
         return None
 
@@ -55,14 +71,16 @@ class ReActLoop:
         self.memory.reset_run()
         self.memory.add("User", query)
 
-        # If this is a political/leadership question, inject a hard reminder
         if _requires_live_search(query):
             self.memory.add(
                 "System",
-                f"⚠️ MANDATORY: This question is about a current role or position. "
-                f"You MUST call web[] first. Do NOT answer from training memory — "
-                f"it is outdated. The year is {year}."
+                f"⚠️ MANDATORY: This question needs current data. "
+                f"You MUST call web[] first. Year is {year}. "
+                f"Do NOT answer from training memory — it is outdated."
             )
+
+        search_attempted = False
+        search_result = ""
 
         for step in range(MAX_STEPS):
             self.metrics.add_step()
@@ -75,14 +93,12 @@ class ReActLoop:
 
             self.memory.add("Agent", output)
 
-            # ── Final answer found ────────────────────────────────
             answer = self.extract_answer(output)
             if answer:
                 self.metrics.mark_success()
                 self.memory.log_turn(query, answer)
                 return answer
 
-            # ── Tool call ─────────────────────────────────────────
             tool, tool_input = self.parse_action(output)
 
             if tool and tool in self.tools:
@@ -90,16 +106,31 @@ class ReActLoop:
                 print(f"[Tool] {tool}({tool_input})")
                 obs = self.tools[tool].run(tool_input)
                 print(f"[Obs]  {obs[:300]}")
-                self.memory.add("Observation", obs)
-                # ⚠️ No longer forcing "one sentence" — let the system prompt decide length
+
+                if tool == "web":
+                    search_attempted = True
+                    search_result = obs
+
+                # If web search returned empty, try a simpler query automatically
+                if tool == "web" and (not obs or len(obs) < 40):
+                    # Simplify query and retry once
+                    simple_query = query.replace("as of today", "").replace("current", "").strip()
+                    print(f"[WebSearch] Empty result, retrying with: {simple_query}")
+                    obs2 = self.tools["web"].run(simple_query)
+                    if obs2 and len(obs2) > 40:
+                        obs = obs2
+                        search_result = obs2
+
+                self.memory.add("Observation", obs if obs else "Search returned no results.")
                 self.memory.add(
                     "System",
-                    "You have the observation above. Now write your Final Answer based on it. "
-                    "Match the answer length to the question — short for facts, detailed for explanations."
+                    "You have the observation above. Now write your Final Answer. "
+                    "Match length to the question — short for facts, detailed for explanations. "
+                    "If the observation has useful info, use it. "
+                    "If it is empty, say what you know but note it may not be current."
                 )
                 continue
 
-            # ── No action, no answer — nudge ─────────────────────
             self.memory.add(
                 "System",
                 "Either call a tool with Action: toolname[input] OR write Final Answer: <answer>."
