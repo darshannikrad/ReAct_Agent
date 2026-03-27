@@ -26,6 +26,7 @@ BAD_ANSWER_PATTERNS = [
     r"after the web observation",
     r"^\(will be",
     r"^as of \d{4}, i could not",
+    r"^search returned",
 ]
 
 
@@ -61,10 +62,26 @@ class ReActLoop:
     def extract_answer(self, text: str):
         if "Final Answer:" in text:
             ans = text.split("Final Answer:")[-1].strip()
-            # Reject placeholder answers that slipped through
+            # Reject placeholders even if formatted as Final Answer
             if not _is_bad_answer(ans) and "will be provided" not in ans.lower():
                 return ans.strip()
         return None
+
+    def _do_web_search(self, query: str) -> str:
+        """Run web search with automatic fallback to simpler query."""
+        if "web" not in self.tools:
+            return ""
+        result = self.tools["web"].run(query)
+        if not result or len(result) < 40:
+            # Retry with stripped-down query
+            simple = re.sub(
+                r'\b(current|latest|today|now|as of \d{4}|what is the|who is the)\b',
+                '', query, flags=re.I
+            ).strip()
+            if simple and simple != query:
+                print(f"[WebSearch] Retrying simplified: {simple}")
+                result = self.tools["web"].run(simple)
+        return result or ""
 
     def run(self, query: str) -> str:
         year = datetime.now().year
@@ -78,11 +95,9 @@ class ReActLoop:
                 "System",
                 f"⚠️ MANDATORY: Call web[] RIGHT NOW before writing anything else. "
                 f"Do NOT write a placeholder. Do NOT say 'will be provided'. "
-                f"Your ONLY valid responses are:\n"
-                f"  Thought: ...\n  Action: web[your search query]\n"
-                f"OR after you get an Observation:\n"
-                f"  Final Answer: <actual answer>\n"
-                f"Year is {year}. Training data is outdated — you MUST search first."
+                f"Your ONLY valid first response is:\n"
+                f"  Thought: <one line>\n  Action: web[your search query]\n"
+                f"Year is {year}. Training data is outdated — search first, answer after."
             )
 
         for step in range(MAX_STEPS):
@@ -92,65 +107,65 @@ class ReActLoop:
             output, tokens = generate(system_prompt, user_context)
             self.metrics.add_tokens(tokens)
 
-            print(f"\n[Step {step+1}] LLM OUTPUT:\n{output}\n")
+            print(f"\n[Step {step+1}] LLM:\n{output}\n")
 
-            # If LLM wrote a placeholder instead of calling a tool, force it to search
+            # ── Catch placeholder responses before adding to memory ───────
             if _is_bad_answer(output) or "will be provided" in output.lower():
-                print("[ReAct] LLM wrote placeholder — forcing web search")
-                self.memory.add("Agent", output)
-                obs = self.tools["web"].run(query) if "web" in self.tools else ""
-                if not obs:
-                    obs = self.tools["web"].run(query.split("?")[0]) if "web" in self.tools else ""
-                self.memory.add("Observation", obs if obs else "Search returned no data.")
+                print("[ReAct] Placeholder detected — forcing web search")
+                obs = self._do_web_search(query)
+                self.memory.add("Agent", "(searched web)")
+                self.memory.add("Observation", obs if obs else "No results found.")
                 self.memory.add(
                     "System",
-                    "You now have the Observation above. Write your Final Answer NOW. "
-                    "Do NOT say 'will be provided'. Give the actual answer based on the observation. "
-                    "If observation has no data, give your best answer from knowledge and note it may not be current."
+                    "You have the Observation. Write your Final Answer NOW — "
+                    "a real answer, not a placeholder. If observation is empty, "
+                    "answer from your best knowledge and note it may not be fully current."
                 )
                 self.metrics.add_tool_call()
                 continue
 
             self.memory.add("Agent", output)
 
-            # Check for final answer
+            # ── Final answer ──────────────────────────────────────────────
             answer = self.extract_answer(output)
             if answer:
-                self.metrics.mark_success()
+                # ⚠️ Do NOT call mark_success() here — server.py handles that
+                # after critic verification to avoid double-marking
                 self.memory.log_turn(query, answer)
                 return answer
 
-            # Check for tool call
+            # ── Tool call ─────────────────────────────────────────────────
             tool, tool_input = self.parse_action(output)
 
             if tool and tool in self.tools:
                 self.metrics.add_tool_call()
                 print(f"[Tool] {tool}({tool_input})")
-                obs = self.tools[tool].run(tool_input)
 
-                # If web search empty, retry with simpler query
-                if tool == "web" and (not obs or len(obs) < 40):
-                    simple = re.sub(r'\b(current|latest|today|now|as of \d{4})\b', '', query, flags=re.I).strip()
-                    print(f"[WebSearch] Retrying with simplified: {simple}")
-                    obs = self.tools["web"].run(simple)
+                if tool == "web":
+                    obs = self._do_web_search(tool_input)
+                else:
+                    obs = self.tools[tool].run(tool_input)
 
                 print(f"[Obs] {obs[:300] if obs else 'EMPTY'}")
-                self.memory.add("Observation", obs if obs else "Search returned no data.")
+                self.memory.add("Observation", obs if obs else "No results found.")
                 self.memory.add(
                     "System",
                     "You have the Observation above. Write your Final Answer NOW. "
-                    "Match length to the question. If observation has useful info use it. "
-                    "If empty, answer from your knowledge and note it may not be fully current."
+                    "Match length to the question — short for facts, detailed for explanations. "
+                    "If the observation has useful info, use it. "
+                    "If it is empty, answer from your best knowledge and note it may not be current."
                 )
                 continue
 
-            # No action, no answer
+            # ── No action and no answer — nudge ───────────────────────────
             self.memory.add(
                 "System",
-                "You must either call a tool: Action: toolname[input]\n"
-                "OR give a Final Answer: <your answer here>\n"
+                "You must either:\n"
+                "  Call a tool: Action: toolname[input]\n"
+                "  OR give a Final Answer: <your answer here>\n"
                 "Do NOT write placeholders or say 'will be provided'."
             )
 
+        # Max steps hit — return best effort
         self.metrics.mark_hallucination()
         return "I could not find a reliable answer. Please try rephrasing."
