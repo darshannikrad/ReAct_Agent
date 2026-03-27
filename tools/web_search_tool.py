@@ -1,12 +1,15 @@
-from datetime import datetime
-import requests
+import os
 import re
+import requests
+from datetime import datetime
 
 try:
     from duckduckgo_search import DDGS
     DDGS_AVAILABLE = True
 except ImportError:
     DDGS_AVAILABLE = False
+
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 
 
 class WebSearchTool:
@@ -22,33 +25,61 @@ class WebSearchTool:
         if str(year) not in query:
             query = f"{query} {year}"
 
-        # Method 1: duckduckgo_search library
+        print(f"[WebSearch] Searching: {query}")
+
+        if TAVILY_API_KEY:
+            result = self._tavily(query)
+            if result and len(result) > 40:
+                print(f"[WebSearch] Tavily success")
+                return result
+
         if DDGS_AVAILABLE:
             result = self._ddgs_lib(query)
             if result and len(result) > 40:
+                print(f"[WebSearch] DDGS success")
                 return result
 
-        # Method 2: DDG HTML scrape
-        result = self._ddg_html(query)
-        if result and len(result) > 40:
-            return result
-
-        # Method 3: DDG Instant Answer API
-        result = self._ddg_api(query)
-        if result and len(result) > 40:
-            return result
-
-        # Method 4: Wikipedia REST API (surprisingly good for current facts)
         result = self._wiki_rest(query)
         if result and len(result) > 40:
+            print(f"[WebSearch] Wiki REST success")
             return result
 
-        # Method 5: Brave Search scrape (no API key needed)
-        result = self._brave_scrape(query)
+        result = self._ddg_html(query)
         if result and len(result) > 40:
+            print(f"[WebSearch] DDG HTML success")
             return result
 
+        result = self._bing_scrape(query)
+        if result and len(result) > 40:
+            print(f"[WebSearch] Bing success")
+            return result
+
+        print(f"[WebSearch] All methods failed for: {query}")
         return ""
+
+    def _tavily(self, query: str) -> str:
+        try:
+            r = requests.post(
+                "https://api.tavily.com/search",
+                json={
+                    "api_key": TAVILY_API_KEY,
+                    "query": query,
+                    "search_depth": "basic",
+                    "max_results": 4,
+                    "include_answer": True,
+                },
+                timeout=10
+            )
+            data = r.json()
+            answer = data.get("answer", "")
+            if answer and len(answer) > 20:
+                return answer
+            results = data.get("results", [])
+            snippets = [res.get("content", "") for res in results if res.get("content")]
+            return " | ".join(s[:200] for s in snippets[:3] if len(s) > 20)
+        except Exception as e:
+            print(f"[WebSearch] Tavily error: {e}")
+            return ""
 
     def _ddgs_lib(self, query: str) -> str:
         try:
@@ -57,21 +88,41 @@ class WebSearchTool:
             snippets = [r["body"] for r in results if r.get("body") and len(r["body"]) > 20]
             return " | ".join(snippets[:3]) if snippets else ""
         except Exception as e:
-            print(f"[WebSearch] DDGS lib failed: {e}")
+            print(f"[WebSearch] DDGS error: {e}")
             return ""
+
+    def _wiki_rest(self, query: str) -> str:
+        try:
+            clean = re.sub(r'\d{4}', '', query).strip()
+            search_r = requests.get(
+                "https://en.wikipedia.org/w/api.php",
+                params={"action": "query", "list": "search", "srsearch": clean,
+                        "format": "json", "srlimit": 1},
+                headers=self.HEADERS, timeout=6
+            )
+            items = search_r.json().get("query", {}).get("search", [])
+            if not items:
+                return ""
+            title = items[0]["title"]
+            summary_r = requests.get(
+                f"https://en.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(title)}",
+                headers=self.HEADERS, timeout=6
+            )
+            if summary_r.status_code == 200:
+                extract = summary_r.json().get("extract", "")
+                if extract and len(extract) > 40:
+                    return extract[:600]
+        except Exception as e:
+            print(f"[WebSearch] Wiki REST error: {e}")
+        return ""
 
     def _ddg_html(self, query: str) -> str:
         try:
-            r = requests.get(
-                "https://html.duckduckgo.com/html/",
-                params={"q": query},
-                headers=self.HEADERS,
-                timeout=8
-            )
-            text = r.text
-            snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', text, re.DOTALL)
+            r = requests.get("https://html.duckduckgo.com/html/",
+                             params={"q": query}, headers=self.HEADERS, timeout=8)
+            snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', r.text, re.DOTALL)
             if not snippets:
-                snippets = re.findall(r'class="result__snippet">(.*?)</span>', text, re.DOTALL)
+                snippets = re.findall(r'class="result__snippet">(.*?)</span>', r.text, re.DOTALL)
             cleaned = []
             for s in snippets[:5]:
                 s = re.sub(r'<[^>]+>', '', s)
@@ -80,66 +131,21 @@ class WebSearchTool:
                     cleaned.append(s)
             return " | ".join(cleaned[:3]) if cleaned else ""
         except Exception as e:
-            print(f"[WebSearch] DDG HTML failed: {e}")
+            print(f"[WebSearch] DDG HTML error: {e}")
             return ""
 
-    def _ddg_api(self, query: str) -> str:
+    def _bing_scrape(self, query: str) -> str:
         try:
-            r = requests.get(
-                "https://api.duckduckgo.com/",
-                params={"q": query, "format": "json", "no_html": 1, "skip_disambig": 1},
-                headers=self.HEADERS,
-                timeout=6
-            )
-            data = r.json()
-            abstract = data.get("AbstractText", "")
-            if abstract and len(abstract) > 40:
-                return abstract
-            for t in data.get("RelatedTopics", []):
-                if isinstance(t, dict) and t.get("Text") and len(t["Text"]) > 40:
-                    return t["Text"]
-        except Exception as e:
-            print(f"[WebSearch] DDG API failed: {e}")
-        return ""
-
-    def _wiki_rest(self, query: str) -> str:
-        """Wikipedia REST API — great for current leaders, prices, events."""
-        try:
-            # Clean query for wiki search
-            clean = re.sub(r'\d{4}', '', query).strip()
-            r = requests.get(
-                "https://en.wikipedia.org/api/rest_v1/page/summary/" + requests.utils.quote(clean),
-                headers=self.HEADERS,
-                timeout=6
-            )
-            if r.status_code == 200:
-                data = r.json()
-                extract = data.get("extract", "")
-                if extract and len(extract) > 40:
-                    return extract[:500]
-        except Exception as e:
-            print(f"[WebSearch] Wiki REST failed: {e}")
-        return ""
-
-    def _brave_scrape(self, query: str) -> str:
-        """Scrape Bing as a reliable last resort."""
-        try:
-            r = requests.get(
-                "https://www.bing.com/search",
-                params={"q": query},
-                headers=self.HEADERS,
-                timeout=8
-            )
-            text = r.text
-            # Extract Bing snippets
-            snippets = re.findall(r'<p[^>]*>(.*?)</p>', text, re.DOTALL)
+            r = requests.get("https://www.bing.com/search",
+                             params={"q": query}, headers=self.HEADERS, timeout=8)
+            snippets = re.findall(r'<p[^>]*>(.*?)</p>', r.text, re.DOTALL)
             cleaned = []
             for s in snippets:
                 s = re.sub(r'<[^>]+>', '', s)
                 s = re.sub(r'\s+', ' ', s).strip()
-                if len(s) > 40 and len(s) < 400:
+                if 40 < len(s) < 400:
                     cleaned.append(s)
             return " | ".join(cleaned[:3]) if cleaned else ""
         except Exception as e:
-            print(f"[WebSearch] Bing scrape failed: {e}")
+            print(f"[WebSearch] Bing error: {e}")
         return ""
