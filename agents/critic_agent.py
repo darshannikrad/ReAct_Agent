@@ -3,28 +3,47 @@ from datetime import datetime
 from llm.llm_provider import generate
 
 
-# Known stale answers to hard-reject immediately
-STALE_ANSWERS = [
+# Hard-reject these immediately without LLM call — known wrong answers
+STALE_HARD_REJECT = [
     r"joe biden is (the )?president",
     r"biden is (the )?president",
     r"droupadi murmu is (the )?president of (the )?united states",
-    r"as of 202[01234], joe biden",
-    r"as of 202[01234], biden",
+    r"as of 202[0123], joe biden",
 ]
+
+# These answers mean the search failed — not a hallucination, just no data
+SEARCH_FAILED_PATTERNS = [
+    r"^i could not find",
+    r"^no current information",
+    r"^i was unable",
+    r"will be provided after",
+    r"^\(will be",
+]
+
+
+def _is_search_failure(answer: str) -> bool:
+    a = answer.lower().strip()
+    return any(re.search(p, a) for p in SEARCH_FAILED_PATTERNS)
 
 
 class CriticAgent:
 
     def verify(self, question: str, answer: str) -> bool:
-        answer_lower = answer.lower()
 
-        # ── Hard-reject known stale political answers ────────────────────
-        for pattern in STALE_ANSWERS:
+        # ── 1. Hard-reject known stale political answers ─────────────────
+        answer_lower = answer.lower()
+        for pattern in STALE_HARD_REJECT:
             if re.search(pattern, answer_lower):
-                print(f"[Critic] ❌ Hard-rejected stale answer: {answer}")
+                print(f"[Critic] ❌ Hard-rejected stale: {answer[:80]}")
                 return False
 
-        # ── LLM fact-check with today's date ────────────────────────────
+        # ── 2. Search failures are NOT hallucinations — mark as invalid
+        #       but don't retry (no point — search already failed)
+        if _is_search_failure(answer):
+            print(f"[Critic] ⚠️ Search failure answer — marking invalid but not hallucination")
+            return False
+
+        # ── 3. LLM fact-check with full date context ─────────────────────
         today = datetime.now().strftime("%B %d, %Y")
         year  = datetime.now().year
 
@@ -33,25 +52,28 @@ class CriticAgent:
 Question: {question}
 Answer: {answer}
 
-Evaluate:
+Evaluate ALL of these:
 1. Is this factually correct AS OF {today}?
-2. For political roles (president, prime minister, etc.) — is the named person ACTUALLY in that role RIGHT NOW in {year}?
-   - The US President in {year} is Donald Trump (inaugurated Jan 20, 2025).
-   - India's PM in {year} is Narendra Modi.
-   - India's President in {year} is Droupadi Murmu.
-   Use these facts to verify. If the answer names the wrong person, it is INVALID.
-3. Is it free of hallucinations?
+2. For political roles — is the named person ACTUALLY holding that role RIGHT NOW in {year}?
+   Known facts you must use:
+   - US President in {year}: Donald Trump (inaugurated Jan 20, 2025, second term)
+   - India PM in {year}: Narendra Modi
+   - India President in {year}: Droupadi Murmu
+   - UK PM in {year}: Keir Starmer
+3. Is it free of hallucinations and made-up details?
+4. Does the answer actually address the question asked?
 
-Reply with exactly one word: VALID or INVALID
-"""
+Reply with EXACTLY one word only: VALID or INVALID"""
+
         result, _ = generate(prompt)
         result = result.strip().upper()
 
-        is_valid = result.startswith("VALID") and "INVALID" not in result
+        # Be strict: only "VALID" passes, anything else (including "VALID but..." fails)
+        is_valid = result == "VALID"
 
         if not is_valid:
-            print(f"[Critic] ❌ LLM rejected: {answer} | Said: {result}")
+            print(f"[Critic] ❌ LLM rejected: '{answer[:80]}' | Critic: {result}")
         else:
-            print(f"[Critic] ✅ Accepted: {answer}")
+            print(f"[Critic] ✅ Accepted: '{answer[:80]}'")
 
         return is_valid
